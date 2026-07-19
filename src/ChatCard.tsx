@@ -5,7 +5,7 @@ import {createEffect, createSignal, For} from "solid-js";
 import styles from "./MainAppWidgets.module.css";
 
 export default function ChatCard(props: {
-    chatLog: MessageNode[][];
+    chatLog: [MessageNode[], string?][];
     sendMessage: (msg: string) => void;
     themeColour: "light" | "dark";
 }) {
@@ -30,8 +30,8 @@ export default function ChatCard(props: {
                 Chat
             </Typography>
             <Box sx={{display: "flex", flexDirection: "column", width: "100%", maxHeight: "40vh", flexGrow: 1, flexShrink: 1, overflowY: "auto"}} ref={chatBoxRef} class={styles[props.themeColour]}>
-                <For each={props.chatLog}>{message => (
-                    <span>
+                <For each={props.chatLog}>{([message, colour]) => (
+                    <span style={colour ? {color: colour} : undefined}>
                         <For each={message}>{node => (
                             <span classList={{
                                 [styles.progression]: node.item?.progression,
