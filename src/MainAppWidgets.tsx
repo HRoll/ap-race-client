@@ -1,5 +1,5 @@
 import {Add} from "@suid/icons-material";
-import {Box, Button, Card, CardContent, FormControlLabel, IconButton, Switch, TextField, Typography} from "@suid/material";
+import {Box, Button, Card, CardActions, CardContent, FormControlLabel, IconButton, Switch, TextField, Typography} from "@suid/material";
 import {Client, ColorMessageNode, MessageNode, PlayerMessageNode, TextualMessageNode} from "archipelago.js";
 import {createSignal, For, Setter, Show, Signal} from "solid-js";
 import ChatCard from "./ChatCard";
@@ -134,85 +134,83 @@ function ConnectionCard(props: {
                     password: event.target.value
                 }))}
             />
-            <FormControlLabel disabled control={<Switch />} label="Connect as game" />
+            <Show when={false}>
+                <FormControlLabel disabled control={<Switch />} label="Connect as game" />
+            </Show>
             <Show when={props.connection.connectionState}>{state => (
                 <Typography color={props.connection.isError ? "error" : undefined}>
                     {state()}
                 </Typography>
             )}</Show>
-            <Box sx={{
-                display: "flex",
-                flexDirection: "row-reverse",
-                justifyContent: "end"
-            }}>
-                <Button
-                    disabled={props.connection.connectionState == "Connecting..."}
-                    onClick={props.connection.isConnected ? () => {
-                        props.connection.client.socket.disconnect();
-                        props.setConnection(connection => ({
-                            ...connection,
-                            isConnected: false
-                        }));
-                    } : async () => {
-                        props.setConnection(connection => ({
-                            ...connection,
-                            isConnected: true,
-                            connectionState: "Connecting...",
-                            isError: false
-                        }));
-                        const {
-                            server,
-                            slotName,
-                            password,
-                            shouldConnectAsGame,
-                            client,
-                            isConnected,
-                            connectionState,
-                            isError
-                        } = props.connection;
-
-                        try {
-                            await client.login(server, slotName, shouldConnectAsGame ? "APRaceClient" : undefined, {
-                                password,
-                                tags: ["DeathLink", "APRaceClient"]
-                            });
-                            props.setConnection(connection => ({
-                                ...connection,
-                                connectionState: ""
-                            }));
-                        } catch (error) {
-                            props.setConnection(connection => ({
-                                ...connection,
-                                isConnected: false,
-                                connectionState: "" + error,
-                                isError: true
-                            }));
-                        }
-                    }}
-                >
-                    <Show when={props.connection.isConnected} fallback="Connect">Disconnect</Show>
-                </Button>
-                <Button
-                    color="error"
-                    disabled={props.connection.isConnected}
-                    onClick={() => props.setConnections(
-                        connections => connections.filter((_, i) => i != props.index)
-                    )}
-                >
-                    Remove
-                </Button>
-                <Button
-                    sx={{height: "calc(0.875rem * 1.75 + 12px)"}}
-                    component="input"
-                    type="color"
-                    value={props.connection.colour}
-                    onChange={event => {
-                        props.setConnection(
-                            connection => ({...connection, colour: event.target.value})
-                        ).client.connectionColour = event.target.value;
-                    }} />
-            </Box>
         </CardContent>
+        <CardActions sx={{mt: -1, flexDirection: "row-reverse", justifyContent: "end"}}>
+            <Button
+                disabled={props.connection.connectionState == "Connecting..."}
+                onClick={props.connection.isConnected ? () => {
+                    props.connection.client.socket.disconnect();
+                    props.setConnection(connection => ({
+                        ...connection,
+                        isConnected: false
+                    }));
+                } : async () => {
+                    props.setConnection(connection => ({
+                        ...connection,
+                        isConnected: true,
+                        connectionState: "Connecting...",
+                        isError: false
+                    }));
+                    const {
+                        server,
+                        slotName,
+                        password,
+                        shouldConnectAsGame,
+                        client,
+                        isConnected,
+                        connectionState,
+                        isError
+                    } = props.connection;
+
+                    try {
+                        await client.login(server, slotName, shouldConnectAsGame ? "APRaceClient" : undefined, {
+                            password,
+                            tags: ["DeathLink", "APRaceClient"]
+                        });
+                        props.setConnection(connection => ({
+                            ...connection,
+                            connectionState: ""
+                        }));
+                    } catch (error) {
+                        props.setConnection(connection => ({
+                            ...connection,
+                            isConnected: false,
+                            connectionState: "" + error,
+                            isError: true
+                        }));
+                    }
+                }}
+            >
+                <Show when={props.connection.isConnected} fallback="Connect">Disconnect</Show>
+            </Button>
+            <Button
+                color="error"
+                disabled={props.connection.isConnected}
+                onClick={() => props.setConnections(
+                    connections => connections.filter((_, i) => i != props.index)
+                )}
+            >
+                Remove
+            </Button>
+            <Button
+                sx={{height: "calc(0.875rem * 1.75 + 12px)"}}
+                component="input"
+                type="color"
+                value={props.connection.colour}
+                onChange={event => {
+                    props.setConnection(
+                        connection => ({...connection, colour: event.target.value})
+                    ).client.connectionColour = event.target.value;
+                }} />
+        </CardActions>
     </Card>;
 }
 

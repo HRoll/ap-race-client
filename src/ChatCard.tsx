@@ -1,5 +1,5 @@
 import {Send} from "@suid/icons-material";
-import {Box, Button, Card, CardActions, CardContent, TextField, Typography} from "@suid/material";
+import {Box, Button, Card, CardActions, CardContent, FormControlLabel, Switch, TextField, Typography} from "@suid/material";
 import {MessageNode} from "archipelago.js";
 import {createEffect, createSignal, For} from "solid-js";
 import styles from "./MainAppWidgets.module.css";
@@ -10,9 +10,12 @@ export default function ChatCard(props: {
     themeColour: "light" | "dark";
 }) {
     let chatBoxRef!: HTMLDivElement;
+    const [autoScroll, setAutoScroll] = createSignal(true);
     createEffect(() => {
         const _ = props.chatLog;
-        chatBoxRef.lastElementChild?.scrollIntoView();
+        if (autoScroll()) {
+            chatBoxRef.lastElementChild?.scrollIntoView();
+        }
     });
     const [currentChatMsg, setCurrentChatMsg] = createSignal("");
     const [chatHistory, setChatHistory] = createSignal<string[]>([]);
@@ -26,9 +29,18 @@ export default function ChatCard(props: {
     };
     return <Card variant="elevation" sx={{display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0}}>
         <CardContent sx={{display: "flex", flexDirection: "column", gap: 1, flexGrow: 1, minHeight: 0}}>
-            <Typography variant="subtitle1">
-                Chat
-            </Typography>
+            <Box sx={{display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", mt: -1}}>
+                <Typography variant="subtitle1">
+                    Chat
+                </Typography>
+                <FormControlLabel
+                    sx={{mr: 0}}
+                    checked={autoScroll()}
+                    onChange={() => setAutoScroll(val => !val)}
+                    control={<Switch />}
+                    label="Automatically scroll to reveal new messages"
+                />
+            </Box>
             <Box sx={{display: "flex", flexDirection: "column", width: "100%", maxHeight: "40vh", flexGrow: 1, flexShrink: 1, overflowY: "auto"}} ref={chatBoxRef} class={styles[props.themeColour]}>
                 <For each={props.chatLog}>{([message, colour]) => (
                     <span style={colour ? {color: colour} : undefined}>
