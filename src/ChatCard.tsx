@@ -1,6 +1,6 @@
 import {ContentCopy, DeleteForever, Download, Send} from "@suid/icons-material";
 import {Box, Button, ButtonGroup, Card, CardActions, CardContent, FormControlLabel, Switch, TextField, Typography} from "@suid/material";
-import {MessageNode} from "archipelago.js";
+import {Item, MessageNode, Player} from "archipelago.js";
 import {createEffect, createSignal, For} from "solid-js";
 import styles from "./MainAppWidgets.module.css";
 
@@ -18,6 +18,38 @@ function downloadString(text: string, fileType: string, fileName: string) {
     setTimeout(function () {URL.revokeObjectURL(a.href);}, 1500);
 }
 
+function dumpArchipelagoObjects(obj: Object): Object {
+    if (obj instanceof Player) {
+        return {
+            slot: obj.slot,
+            name: obj.name,
+            team: obj.team,
+            alias: obj.alias,
+        };
+    } else if (obj instanceof Item) {
+        return {
+            receiver: obj.receiver,
+            sender: obj.sender,
+            item: obj.name,
+            id: obj.id,
+            game: obj.game,
+            flags: {
+                bits: obj.flags,
+                progression: obj.progression,
+                useful: obj.useful,
+                trap: obj.trap,
+                filler: obj.filler,
+            },
+            location: {
+                name: obj.locationName,
+                id: obj.locationId,
+                game: obj.locationGame,
+            }
+        };
+    } else {
+        return obj;
+    }
+}
 
 export default function ChatCard(props: {
     chatLog: [MessageNode[], string?][];
@@ -30,11 +62,14 @@ export default function ChatCard(props: {
     const [autoScroll, setAutoScroll] = createSignal(true);
     createEffect(() => {
         const _ = props.chatLog;
-        console.debug(props.chatBySource);
         if (autoScroll()) {
             chatBoxRef.lastElementChild?.scrollIntoView();
         }
     });
+    const dumpChat = () => JSON.stringify(
+        props.chatBySource,
+        (k, v) => k == 'client' ? undefined : dumpArchipelagoObjects(v)
+    );
     const [currentChatMsg, setCurrentChatMsg] = createSignal("");
     const [chatHistory, setChatHistory] = createSignal<string[]>([]);
     const [chatHistoryIdx, setChatHistoryIdx] = createSignal(0);
@@ -63,10 +98,7 @@ export default function ChatCard(props: {
                             title="Copy as JSON"
                             onClick={() => {
                                 navigator.clipboard.writeText(
-                                    JSON.stringify(
-                                        props.chatBySource,
-                                        (k, v) => k == 'client' ? undefined : v
-                                    )
+                                    dumpChat()
                                 );
                             }}
                             variant="contained"
@@ -77,10 +109,7 @@ export default function ChatCard(props: {
                             title="Download as JSON"
                             onClick={() => {
                                 downloadString(
-                                    JSON.stringify(
-                                        props.chatBySource,
-                                        (k, v) => k == 'client' ? undefined : v
-                                    ),
+                                    dumpChat(),
                                     "application/json",
                                     "chat.json",
                                 );
