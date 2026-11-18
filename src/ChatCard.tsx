@@ -6,6 +6,8 @@ import styles from "./MainAppWidgets.module.css";
 
 export default function ChatCard(props: {
     chatLog: [MessageNode[], string?][];
+    chatBySource: {[key: string]: MessageNode[][];};
+    resetChatBySource: () => void;
     sendMessage: (msg: string) => void;
     themeColour: "light" | "dark";
 }) {
@@ -13,6 +15,7 @@ export default function ChatCard(props: {
     const [autoScroll, setAutoScroll] = createSignal(true);
     createEffect(() => {
         const _ = props.chatLog;
+        console.debug(props.chatBySource);
         if (autoScroll()) {
             chatBoxRef.lastElementChild?.scrollIntoView();
         }
@@ -33,6 +36,22 @@ export default function ChatCard(props: {
                 <Typography variant="subtitle1">
                     Chat
                 </Typography>
+                <Button onClick={props.resetChatBySource} color="error">
+                    Clear JSON logs
+                </Button>
+                <Button
+                    onClick={() => {
+                        navigator.clipboard.writeText(
+                            JSON.stringify(
+                                props.chatBySource,
+                                (k, v) => k == 'client' ? undefined : v
+                            )
+                        );
+                    }}
+                    variant="contained"
+                >
+                    Copy JSON logs
+                </Button>
                 <FormControlLabel
                     sx={{mr: 0}}
                     checked={autoScroll()}

@@ -24,7 +24,7 @@ declare module "archipelago.js" {
     }
 }
 
-function newConnection(identifier: string, writeMessage: (message: MessageNode[], colour?: string) => void): ConnectionData {
+function newConnection(identifier: string, writeMessage: (message: MessageNode[], connectionId: string, colour?: string) => void): ConnectionData {
     const client = new Client();
     client.connectionId = identifier;
     client.connectionColour = "white";
@@ -44,21 +44,21 @@ function newConnection(identifier: string, writeMessage: (message: MessageNode[]
         new TextualMessageNode(client, {type: "text", text: `[${timeFormatter.format(new Date())}]`}),
         new TextualMessageNode(client, {type: "text", text: ` [${client.connectionId}] `}),
         ...message
-    ], client.connectionColour));
+    ], client.connectionId, client.connectionColour));
     client.deathLink.on("deathReceived", (source, time, cause) => {
         if (cause) {
             writeMessage([
                 new TextualMessageNode(client, {type: "text", text: `[${timeFormatter.format(time)}]`}),
                 new TextualMessageNode(client, {type: "text", text: ` [${client.connectionId}] `}),
                 new ColorMessageNode(client, {type: "color", text: cause, color: "red"}),
-            ], client.connectionColour);
+            ], client.connectionId, client.connectionColour);
         } else {
             writeMessage([
                 new TextualMessageNode(client, {type: "text", text: `[${timeFormatter.format(time)}]`}),
                 new TextualMessageNode(client, {type: "text", text: ` [${client.connectionId}] `}),
                 new PlayerMessageNode(client, {type: "player_name", text: source}),
                 new ColorMessageNode(client, {type: "color", text: " died!", color: "red"}),
-            ], client.connectionColour);
+            ], client.connectionId, client.connectionColour);
         }
     });
     return {
@@ -217,9 +217,18 @@ function ConnectionCard(props: {
 
 export default function MainAppWidgets(props: {themeColour: "light" | "dark";}) {
     const [chatLog, setChatLog] = createSignal<[MessageNode[], string?][]>([]);
-    const writeMessage = (message: MessageNode[], colour?: string) => setChatLog(chatLog => [...chatLog, [message, colour]]);
+    const [chatBySource, setChatBySource] = createSignal<{[key: string]: MessageNode[][];}>({});
+    const writeMessage = (message: MessageNode[], connectionId: string, colour?: string) => {
+        setChatLog(chatLog => [...chatLog, [message, colour]]);
+        setChatBySource(
+            chats => ({
+                ...chats,
+                [connectionId]: [...(chats[connectionId] ?? []), message]
+            })
+        );
+    };
     const [connections, setConnections] = createSignal([createSignal(newConnection("Connection 1", writeMessage))]);
-    const [connectionId, setConnectionId] = createSignal(1);
+    const [, setConnectionId] = createSignal(1);
     return <Box component="main" sx={{display: "flex", flexDirection: "column", flexGrow: 1, gap: 2, marginY: 2}}>
         <Box sx={{
             display: "flex",
@@ -249,17 +258,23 @@ export default function MainAppWidgets(props: {themeColour: "light" | "dark";}) 
             </IconButton>
             <Box sx={{flexGrow: 1, minWidth: "8px"}} />
         </Box>
-        <ChatCard themeColour={props.themeColour} chatLog={chatLog()} sendMessage={msg => {
-            for (const [connection, _] of connections()) {
-                const data = connection();
-                if (data.isConnected) {
-                    data.client.messages.say(msg).catch(failed => {
-                        writeMessage([{type: "text", text: `${data.identifier} failed to send: ${failed}`} as any]);
-                    });
-                } else {
-                    writeMessage([{type: "text", text: `${data.identifier} failed to send: is not connected`} as any]);
+        <ChatCard
+            themeColour={props.themeColour}
+            chatLog={chatLog()}
+            chatBySource={chatBySource()}
+            resetChatBySource={() => setChatBySource({})}
+            sendMessage={msg => {
+                for (const [connection, _] of connections()) {
+                    const data = connection();
+                    if (data.isConnected) {
+                        data.client.messages.say(msg).catch(failed => {
+                            writeMessage([{type: "text", text: `${data.identifier} failed to send: ${failed}`} as any], "Race Client Console", "red");
+                        });
+                    } else {
+                        writeMessage([{type: "text", text: `${data.identifier} failed to send: is not connected`} as any], "Race Client Console", "red");
+                    }
                 }
-            }
-        }} />
+            }}
+        />
     </Box>;
 }
