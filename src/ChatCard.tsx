@@ -1,8 +1,23 @@
-import {Send} from "@suid/icons-material";
-import {Box, Button, Card, CardActions, CardContent, FormControlLabel, Switch, TextField, Typography} from "@suid/material";
+import {ContentCopy, DeleteForever, Download, Send} from "@suid/icons-material";
+import {Box, Button, ButtonGroup, Card, CardActions, CardContent, FormControlLabel, Switch, TextField, Typography} from "@suid/material";
 import {MessageNode} from "archipelago.js";
 import {createEffect, createSignal, For} from "solid-js";
 import styles from "./MainAppWidgets.module.css";
+
+function downloadString(text: string, fileType: string, fileName: string) {
+    var blob = new Blob([text], {type: fileType});
+
+    var a = document.createElement('a');
+    a.download = fileName;
+    a.href = URL.createObjectURL(blob);
+    a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () {URL.revokeObjectURL(a.href);}, 1500);
+}
+
 
 export default function ChatCard(props: {
     chatLog: [MessageNode[], string?][];
@@ -36,22 +51,46 @@ export default function ChatCard(props: {
                 <Typography variant="subtitle1">
                     Chat
                 </Typography>
-                <Button onClick={props.resetChatBySource} color="error">
-                    Clear JSON logs
-                </Button>
-                <Button
-                    onClick={() => {
-                        navigator.clipboard.writeText(
-                            JSON.stringify(
-                                props.chatBySource,
-                                (k, v) => k == 'client' ? undefined : v
-                            )
-                        );
-                    }}
-                    variant="contained"
-                >
-                    Copy JSON logs
-                </Button>
+                <Box sx={{display: "flex", flexDirection: "row", gap: 1, alignItems: "center"}}>
+                    <Typography variant="subtitle1">
+                        JSON:
+                    </Typography>
+                    <ButtonGroup>
+                        <Button title="Clear JSON data" onClick={props.resetChatBySource} color="error">
+                            <DeleteForever />
+                        </Button>
+                        <Button
+                            title="Copy as JSON"
+                            onClick={() => {
+                                navigator.clipboard.writeText(
+                                    JSON.stringify(
+                                        props.chatBySource,
+                                        (k, v) => k == 'client' ? undefined : v
+                                    )
+                                );
+                            }}
+                            variant="contained"
+                        >
+                            <ContentCopy />
+                        </Button>
+                        <Button
+                            title="Download as JSON"
+                            onClick={() => {
+                                downloadString(
+                                    JSON.stringify(
+                                        props.chatBySource,
+                                        (k, v) => k == 'client' ? undefined : v
+                                    ),
+                                    "application/json",
+                                    "chat.json",
+                                );
+                            }}
+                            variant="contained"
+                        >
+                            <Download />
+                        </Button>
+                    </ButtonGroup>
+                </Box>
                 <FormControlLabel
                     sx={{mr: 0}}
                     checked={autoScroll()}
