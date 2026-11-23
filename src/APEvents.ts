@@ -1,4 +1,4 @@
-import { Item, MessageNode, Player } from "archipelago.js";
+import {Item, MessageNode, Player} from "archipelago.js";
 
 export type APEvent = ItemSentEvent | ItemHintedEvent | GoalEvent;
 
