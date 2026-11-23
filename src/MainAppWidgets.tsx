@@ -16,7 +16,6 @@ interface ConnectionData {
     isConnected: boolean;
     connectionState: string;
     isError: boolean;
-    cleanup: () => void;
 }
 
 declare module "archipelago.js" {
@@ -49,32 +48,28 @@ function newConnection(identifier: string, writeMessage: MessageHandler, handleA
     // client.items.on('itemsReceived', (...args) => console.log('itemsReceived', args));
     // Same for itemHinted in MessageManager. Have to scrape the raw messages instead.
     // client.messages.on('itemHinted', (...args) => console.log('itemHinted', args));
-    const onGoaled = (_text: string, player: Player, _nodes: MessageNode[]) =>
-        handleAPEvent(parseGoalEvent(_text, player, _nodes), client.connectionId);
-    client.messages.on('goaled', onGoaled);
+    client.messages.on('goaled', (_text: string, player: Player, _nodes: MessageNode[]) =>
+        handleAPEvent(parseGoalEvent(_text, player, _nodes), client.connectionId));
 
-    const onItemSent = (_text: string, item: Item, _nodes: MessageNode[]) =>
-        handleAPEvent(parseItemSentEvent(_text, item, _nodes), client.connectionId);
-    client.messages.on('itemSent', onItemSent);
+    client.messages.on('itemSent', (_text: string, item: Item, _nodes: MessageNode[]) =>
+        handleAPEvent(parseItemSentEvent(_text, item, _nodes), client.connectionId));
 
-    const onChat = (text: string, player: Player, nodes: MessageNode[]) => {
+    client.messages.on('chat', (text: string, player: Player, _nodes: MessageNode[]) => {
         const apEvent = parseAPEventFromChat(text, player);
         if (apEvent) {
             handleAPEvent(apEvent, client.connectionId);
         }
-    };
-    client.messages.on('chat', onChat);
+    });
 
-    const onMessage = (_: any, message: MessageNode[]) => {
+    client.messages.on("message", (_, message: MessageNode[]) => {
         writeMessage([
             new TextualMessageNode(client, {type: "text", text: `[${timeFormatter.format(new Date())}]`}),
             new TextualMessageNode(client, {type: "text", text: ` [${client.connectionId}] `}),
             ...message
         ], client.connectionId, client.connectionColour);
-    }
-    client.messages.on("message", onMessage);
+    });
 
-    const onDeathReceived = (source: string, time: number, cause?: string) => {
+    client.deathLink.on("deathReceived", (source: string, time: number, cause?: string) => {
         if (cause) {
             writeMessage([
                 new TextualMessageNode(client, {type: "text", text: `[${timeFormatter.format(time)}]`}),
@@ -89,8 +84,7 @@ function newConnection(identifier: string, writeMessage: MessageHandler, handleA
                 new ColorMessageNode(client, {type: "color", text: " died!", color: "red"}),
             ], client.connectionId, client.connectionColour);
         }
-    }
-    client.deathLink.on("deathReceived", onDeathReceived);
+    });
 
     return {
         identifier,
@@ -103,13 +97,6 @@ function newConnection(identifier: string, writeMessage: MessageHandler, handleA
         isConnected: false,
         connectionState: "",
         isError: false,
-        cleanup: () => {
-            client.messages.off('goaled', onGoaled);
-            client.messages.off('itemSent', onItemSent);
-            client.messages.off('chat', onChat);
-            client.messages.off('message', onMessage);
-            client.deathLink.off('deathReceived', onDeathReceived);
-        }
     };
 }
 
@@ -280,7 +267,7 @@ export default function MainAppWidgets(props: {themeColour: "light" | "dark";}) 
     // TODO: Replace with onSettled if updating solidjs to 2.0
     onCleanup(() => {
         for (const [connection, _] of connections()) {
-            connection().cleanup();
+            connection().client.socket.disconnect();
         }
     });
 
