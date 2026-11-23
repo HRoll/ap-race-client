@@ -1,6 +1,6 @@
 import {Item, MessageNode, Player} from "archipelago.js";
 
-export type APEvent = ItemSentEvent | ItemHintedEvent | GoalEvent;
+export type APEvent = ItemSentEvent | ItemHintedEvent | GoalEvent | ChatEvent;
 
 // Sending a flat object for now.
 // We can start sending the Player/Item objects when we want more data from them.
@@ -26,6 +26,14 @@ export interface GoalEvent {
     player: string;
 }
 
+// Excludes other chats that are more specific AP events, such as ItemHintedEvent.
+export interface ChatEvent {
+    type: "chat";
+    timestamp: number;
+    player: string;
+    message: string;
+}
+
 export function parseItemSentEvent(_text: string, item: Item, _nodes: MessageNode[]): ItemSentEvent {
     return {
         type: "itemSent",
@@ -47,8 +55,8 @@ export function parseGoalEvent(_text: string, player: Player, _nodes: MessageNod
 
 const HINT_PATTERN = /^!hint (.*)/;
 
-export function parseAPEventFromChat(_text: string, player: Player): ItemHintedEvent | null {
-    const match = _text.match(HINT_PATTERN);
+export function parseAPEventFromChat(text: string, player: Player): ItemHintedEvent | ChatEvent | null {
+    const match = text.match(HINT_PATTERN);
     if (match) {
         const item = match[1];
         return {
@@ -58,7 +66,12 @@ export function parseAPEventFromChat(_text: string, player: Player): ItemHintedE
             item: item
         };
     }
-    return null;
+    return {
+        type: "chat",
+        timestamp: Date.now(),
+        player: player.name,
+        message: text
+    };
 }
 
 export function dumpArchipelagoObjects(obj: Object): Object {
