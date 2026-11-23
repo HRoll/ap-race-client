@@ -1,11 +1,12 @@
-import {ContentCopy, DeleteForever, Download, Send} from "@suid/icons-material";
-import {Box, Button, ButtonGroup, Card, CardActions, CardContent, FormControlLabel, Switch, TextField, Typography} from "@suid/material";
-import {Item, MessageNode, Player} from "archipelago.js";
-import {createEffect, createSignal, For} from "solid-js";
+import { ContentCopy, DeleteForever, Download, Send } from "@suid/icons-material";
+import { Box, Button, ButtonGroup, Card, CardActions, CardContent, FormControlLabel, Switch, TextField, Typography } from "@suid/material";
+import { MessageNode } from "archipelago.js";
+import { createEffect, createSignal, For } from "solid-js";
 import styles from "./MainAppWidgets.module.css";
+import { APEvent, dumpArchipelagoObjects } from "./APEvents";
 
 function downloadString(text: string, fileType: string, fileName: string) {
-    var blob = new Blob([text], {type: fileType});
+    var blob = new Blob([text], { type: fileType });
 
     var a = document.createElement('a');
     a.download = fileName;
@@ -15,45 +16,13 @@ function downloadString(text: string, fileType: string, fileName: string) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function () {URL.revokeObjectURL(a.href);}, 1500);
-}
-
-function dumpArchipelagoObjects(obj: Object): Object {
-    if (obj instanceof Player) {
-        return {
-            slot: obj.slot,
-            name: obj.name,
-            team: obj.team,
-            alias: obj.alias,
-        };
-    } else if (obj instanceof Item) {
-        return {
-            receiver: obj.receiver,
-            sender: obj.sender,
-            item: obj.name,
-            id: obj.id,
-            game: obj.game,
-            flags: {
-                bits: obj.flags,
-                progression: obj.progression,
-                useful: obj.useful,
-                trap: obj.trap,
-                filler: obj.filler,
-            },
-            location: {
-                name: obj.locationName,
-                id: obj.locationId,
-                game: obj.locationGame,
-            }
-        };
-    } else {
-        return obj;
-    }
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
 }
 
 export default function ChatCard(props: {
     chatLog: [MessageNode[], string?][];
-    chatBySource: {[key: string]: MessageNode[][];};
+    chatBySource: { [key: string]: MessageNode[][]; };
+    apEventsBySource: { [key: string]: APEvent[]; };
     resetChatBySource: () => void;
     sendMessage: (msg: string) => void;
     themeColour: "light" | "dark";
@@ -66,8 +35,8 @@ export default function ChatCard(props: {
             chatBoxRef.lastElementChild?.scrollIntoView();
         }
     });
-    const dumpChat = () => JSON.stringify(
-        props.chatBySource,
+    const dumpAPEvents = () => JSON.stringify(
+        props.apEventsBySource,
         (k, v) => k == 'client' ? undefined : dumpArchipelagoObjects(v)
     );
     const [currentChatMsg, setCurrentChatMsg] = createSignal("");
@@ -80,13 +49,13 @@ export default function ChatCard(props: {
             setCurrentChatMsg("");
         }
     };
-    return <Card variant="elevation" sx={{display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0}}>
-        <CardContent sx={{display: "flex", flexDirection: "column", gap: 1, flexGrow: 1, minHeight: 0}}>
-            <Box sx={{display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", mt: -1}}>
+    return <Card variant="elevation" sx={{ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0 }}>
+        <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1, flexGrow: 1, minHeight: 0 }}>
+            <Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", mt: -1 }}>
                 <Typography variant="subtitle1">
                     Chat
                 </Typography>
-                <Box sx={{display: "flex", flexDirection: "row", gap: 1, alignItems: "center"}}>
+                <Box sx={{ display: "flex", flexDirection: "row", gap: 1, alignItems: "center" }}>
                     <Typography variant="subtitle1">
                         JSON:
                     </Typography>
@@ -98,7 +67,7 @@ export default function ChatCard(props: {
                             title="Copy as JSON"
                             onClick={() => {
                                 navigator.clipboard.writeText(
-                                    dumpChat()
+                                    dumpAPEvents()
                                 );
                             }}
                             variant="contained"
@@ -109,7 +78,7 @@ export default function ChatCard(props: {
                             title="Download as JSON"
                             onClick={() => {
                                 downloadString(
-                                    dumpChat(),
+                                    dumpAPEvents(),
                                     "application/json",
                                     "chat.json",
                                 );
@@ -121,16 +90,16 @@ export default function ChatCard(props: {
                     </ButtonGroup>
                 </Box>
                 <FormControlLabel
-                    sx={{mr: 0}}
+                    sx={{ mr: 0 }}
                     checked={autoScroll()}
                     onChange={() => setAutoScroll(val => !val)}
                     control={<Switch />}
                     label="Automatically scroll to reveal new messages"
                 />
             </Box>
-            <Box sx={{display: "flex", flexDirection: "column", width: "100%", maxHeight: "40vh", flexGrow: 1, flexShrink: 1, overflowY: "auto"}} ref={chatBoxRef} class={styles[props.themeColour]}>
+            <Box sx={{ display: "flex", flexDirection: "column", width: "100%", maxHeight: "40vh", flexGrow: 1, flexShrink: 1, overflowY: "auto" }} ref={chatBoxRef} class={styles[props.themeColour]}>
                 <For each={props.chatLog}>{([message, colour]) => (
-                    <span style={colour ? {color: colour} : undefined}>
+                    <span style={colour ? { color: colour } : undefined}>
                         <For each={message}>{node => (
                             <span classList={{
                                 [styles.progression]: node.item?.progression,
@@ -155,7 +124,7 @@ export default function ChatCard(props: {
                 variant="outlined"
                 size="small"
                 value={currentChatMsg()}
-                sx={{flexGrow: 1}}
+                sx={{ flexGrow: 1 }}
                 onChange={event => setCurrentChatMsg(event.target.value)}
                 onKeyDown={event => {
                     if (event.shiftKey || event.ctrlKey || event.altKey) {
@@ -178,7 +147,7 @@ export default function ChatCard(props: {
                     }
                 }}
             />
-            <Button variant="contained" sx={{height: "100%"}} startIcon={<Send />} onClick={sendChatMsg}>Send</Button>
+            <Button variant="contained" sx={{ height: "100%" }} startIcon={<Send />} onClick={sendChatMsg}>Send</Button>
         </CardActions>
     </Card>;
 }
