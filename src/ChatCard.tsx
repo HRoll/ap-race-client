@@ -21,9 +21,8 @@ function downloadString(text: string, fileType: string, fileName: string) {
 
 export default function ChatCard(props: {
     chatLog: [MessageNode[], string?][];
-    chatBySource: {[key: string]: MessageNode[][];};
     apEventsBySource: {[key: string]: APEvent[];};
-    resetChatBySource: () => void;
+    resetApEventsBySource: () => void;
     sendMessage: (msg: string) => void;
     themeColour: "light" | "dark";
 }) {
@@ -60,7 +59,7 @@ export default function ChatCard(props: {
                         JSON:
                     </Typography>
                     <ButtonGroup>
-                        <Button title="Clear JSON data" onClick={props.resetChatBySource} color="error">
+                        <Button title="Clear JSON data" onClick={props.resetApEventsBySource} color="error">
                             <DeleteForever />
                         </Button>
                         <Button

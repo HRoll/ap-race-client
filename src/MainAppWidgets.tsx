@@ -248,19 +248,12 @@ function ConnectionCard(props: {
 
 export default function MainAppWidgets(props: {themeColour: "light" | "dark";}) {
     const [chatLog, setChatLog] = createSignal<[MessageNode[], string?][]>([]);
-    const [chatBySource, setChatBySource] = createSignal<{[key: string]: MessageNode[][];}>({});
-    const [apEventsBySource, setAPEventsBySource] = createSignal<{[key: string]: APEvent[];}>({});
+    const [apEventsBySource, setApEventsBySource] = createSignal<{[key: string]: APEvent[];}>({});
     const writeMessage = (message: MessageNode[], connectionId: string, colour?: string) => {
         setChatLog(chatLog => [...chatLog, [message, colour]]);
-        setChatBySource(
-            chats => ({
-                ...chats,
-                [connectionId]: [...(chats[connectionId] ?? []), message]
-            })
-        );
     };
     const handleAPEvent = (event: APEvent, connectionId: string) => {
-        setAPEventsBySource(
+        setApEventsBySource(
             events => ({
                 ...events,
                 [connectionId]: [...(events[connectionId] ?? []), event]
@@ -309,9 +302,8 @@ export default function MainAppWidgets(props: {themeColour: "light" | "dark";}) 
         <ChatCard
             themeColour={props.themeColour}
             chatLog={chatLog()}
-            chatBySource={chatBySource()}
             apEventsBySource={apEventsBySource()}
-            resetChatBySource={() => setChatBySource({})}
+            resetApEventsBySource={() => setApEventsBySource({})}
             sendMessage={msg => {
                 for (const [connection, _] of connections()) {
                     const data = connection();
