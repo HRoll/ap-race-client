@@ -1,6 +1,6 @@
 import {Item, MessageNode, Player} from "archipelago.js";
 
-export type APEvent = ItemSentEvent | ItemHintedEvent | GoalEvent | ChatEvent | CountdownEvent;
+export type APEvent = ItemSentEvent | ItemHintedEvent | GoalEvent | ChatEvent | CountdownEvent | ServerChatEvent;
 
 // Sending a flat object for now.
 // We can start sending the Player/Item objects when we want more data from them.
@@ -39,6 +39,12 @@ export interface CountdownEvent {
     timestamp: number;
     // The countdown value, in seconds. 0 means GO!
     value: number;
+}
+
+export interface ServerChatEvent {
+    type: "serverChat";
+    timestamp: number;
+    message: string;
 }
 
 export function parseItemSentEvent(_text: string, item: Item, _nodes: MessageNode[]): ItemSentEvent {
@@ -86,6 +92,14 @@ export function parseCountdownEvent(_text: string, value: number): CountdownEven
         type: "countdown",
         timestamp: Date.now(),
         value: value
+    };
+}
+
+export function parseServerChatEvent(message: string): ServerChatEvent {
+    return {
+        type: "serverChat",
+        timestamp: Date.now(),
+        message: message
     };
 }
 

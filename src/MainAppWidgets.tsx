@@ -3,7 +3,7 @@ import {Box, Button, Card, CardActions, CardContent, FormControlLabel, IconButto
 import {Client, ColorMessageNode, Item, MessageNode, Player, PlayerMessageNode, TextualMessageNode} from "archipelago.js";
 import {createSignal, onCleanup, For, Setter, Show, Signal} from "solid-js";
 import ChatCard from "./ChatCard";
-import {APEvent, parseAPEventFromChat, parseCountdownEvent, parseGoalEvent, parseItemSentEvent} from "./APEvents";
+import {APEvent, parseAPEventFromChat, parseCountdownEvent, parseGoalEvent, parseItemSentEvent, parseServerChatEvent} from "./APEvents";
 
 interface ConnectionData {
     identifier: string;
@@ -63,6 +63,9 @@ function newConnection(identifier: string, writeMessage: MessageHandler, handleA
 
     client.messages.on("countdown", (text: string, value: number, _nodes: MessageNode[]) =>
         handleAPEvent(parseCountdownEvent(text, value), client.connectionId));
+
+    client.messages.on("serverChat", (message: string, _nodes: MessageNode[]) =>
+        handleAPEvent(parseServerChatEvent(message), client.connectionId));
 
     client.messages.on("message", (_, message: MessageNode[]) => {
         writeMessage([
