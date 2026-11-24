@@ -3,7 +3,7 @@ import {Box, Button, Card, CardActions, CardContent, FormControlLabel, IconButto
 import {Client, ColorMessageNode, Item, MessageNode, Player, PlayerMessageNode, TextualMessageNode} from "archipelago.js";
 import {createSignal, onCleanup, For, Setter, Show, Signal} from "solid-js";
 import ChatCard from "./ChatCard";
-import {APEvent, parseAPEventFromChat, parseGoalEvent, parseItemSentEvent} from "./APEvents";
+import {APEvent, parseAPEventFromChat, parseCountdownEvent, parseGoalEvent, parseItemSentEvent} from "./APEvents";
 
 interface ConnectionData {
     identifier: string;
@@ -45,21 +45,24 @@ function newConnection(identifier: string, writeMessage: MessageHandler, handleA
         },
     );
     // The ItemManager only sends events for the slot you're connected to, so it doesn't work for our case.
-    // client.items.on('itemsReceived', (...args) => console.log('itemsReceived', args));
+    // client.items.on("itemsReceived", (...args) => console.log("itemsReceived", args));
     // Same for itemHinted in MessageManager. Have to scrape the raw messages instead.
-    // client.messages.on('itemHinted', (...args) => console.log('itemHinted', args));
-    client.messages.on('goaled', (_text: string, player: Player, _nodes: MessageNode[]) =>
+    // client.messages.on("itemHinted", (...args) => console.log("itemHinted", args));
+    client.messages.on("goaled", (_text: string, player: Player, _nodes: MessageNode[]) =>
         handleAPEvent(parseGoalEvent(_text, player, _nodes), client.connectionId));
 
-    client.messages.on('itemSent', (_text: string, item: Item, _nodes: MessageNode[]) =>
+    client.messages.on("itemSent", (_text: string, item: Item, _nodes: MessageNode[]) =>
         handleAPEvent(parseItemSentEvent(_text, item, _nodes), client.connectionId));
 
-    client.messages.on('chat', (text: string, player: Player, _nodes: MessageNode[]) => {
+    client.messages.on("chat", (text: string, player: Player, _nodes: MessageNode[]) => {
         const apEvent = parseAPEventFromChat(text, player);
         if (apEvent) {
             handleAPEvent(apEvent, client.connectionId);
         }
     });
+
+    client.messages.on("countdown", (text: string, value: number, _nodes: MessageNode[]) =>
+        handleAPEvent(parseCountdownEvent(text, value), client.connectionId));
 
     client.messages.on("message", (_, message: MessageNode[]) => {
         writeMessage([
